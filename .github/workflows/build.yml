@@ -201,8 +201,8 @@ jobs:
         run: jlpm
       - name: Docs (app)
         run: >-
-          jupyter lite build --contents examples --output-dir build/docs-app
-          --base-url /jupyterlite/
+          jupyter lite build --contents examples --output-dir build/docs-app --base-url
+          /jupyterlite/
       - name: Check app routes
         run: |
           test -f build/docs-app/lab/index.html
