@@ -8,6 +8,11 @@ on:
     branches:
       - '*'
 
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -195,11 +200,22 @@ jobs:
       - name: Install JS dependencies
         run: jlpm
       - name: Docs (app)
-        run: jupyter lite build --contents examples --output-dir build/docs-app
+        run: >-
+          jupyter lite build --contents examples --output-dir build/docs-app
+          --base-url /jupyterlite/
+      - name: Check app routes
+        run: |
+          test -f build/docs-app/lab/index.html
+          test -f build/docs-app/notebooks/index.html
       - name: Upload (docs app)
         uses: actions/upload-artifact@v7
         with:
           name: jupyterlite docs app ${{ github.run_number }}
+          path: build/docs-app
+      - name: Upload Pages artifact
+        if: github.event_name == 'push'
+        uses: actions/upload-pages-artifact@v3
+        with:
           path: build/docs-app
       - name: Docs (sphinx)
         run: jlpm docs:build
@@ -219,3 +235,15 @@ jobs:
           name: jupyterlite sphinx logs ${{ github.run_number }}
           if-no-files-found: ignore
           path: /tmp/sphinx-*.log
+
+  deploy:
+    if: github.event_name == 'push'
+    needs: [docs]
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
